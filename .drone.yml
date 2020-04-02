@@ -1,0 +1,210 @@
+---
+kind: pipeline
+name: "[CODE_SANITIZE]"
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: "[GIT_CLONE]::[push,pull_request]::[master,"
+  image: alpine/git
+  commands:
+  - git clone -b $DRONE_BRANCH --single-branch --depth 1 https://github.com/muzanella11/DronePipelineDefinition.git .
+  - git checkout -b $DRONE_COMMIT
+  when:
+    branch:
+      exclude:
+      - master
+      - staging
+      - develop
+      - release/*
+    event:
+    - push
+    - pull_request
+
+- name: "[CODE_SANITIZE]::[push,pull_request]::[mast"
+  image: awhalen/docker-php-composer-node
+  commands:
+  - yarn install
+  - yarn test
+  when:
+    branch:
+      exclude:
+      - master
+      - staging
+      - develop
+      - release/*
+    event:
+    - push
+    - pull_request
+
+trigger:
+  branch:
+    exclude:
+    - master
+    - staging
+    - develop
+    - release/*
+  event:
+  - push
+  - pull_request
+
+---
+kind: pipeline
+name: "[DRONE]::[DEV]::[push]::[develop]"
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: "[GIT_CLONE]::[DEV]::[push]::[develop]"
+  image: alpine/git
+  commands:
+  - git clone -b $DRONE_BRANCH --single-branch --depth 1 https://github.com/muzanella11/DronePipelineDefinition.git .
+  - git checkout -b $DRONE_COMMIT
+  when:
+    branch:
+    - develop
+    event:
+    - push
+
+- name: "[BUILD_DEPENDENCIES]::[DEV]::[push]::[develop]"
+  image: awhalen/docker-php-composer-node
+  commands:
+  - yarn install --ignore-engines --production=false
+  - yarn build
+  when:
+    branch:
+    - develop
+    event:
+    - push
+
+trigger:
+  branch:
+  - develop
+  event:
+  - push
+
+---
+kind: pipeline
+name: "[DRONE]::[STG]::[push]::[staging]"
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: "[GIT_CLONE]::[STG]::[push]::[staging]"
+  image: alpine/git
+  commands:
+  - git clone -b $DRONE_BRANCH --single-branch --depth 1 https://github.com/muzanella11/DronePipelineDefinition.git .
+  - git checkout -b $DRONE_COMMIT
+  when:
+    branch:
+    - staging
+    event:
+    - push
+
+- name: "[BUILD_DEPENDENCIES]::[STG]::[push]::[staging"
+  image: awhalen/docker-php-composer-node
+  commands:
+  - yarn install --ignore-engines --production=false
+  - yarn build
+  when:
+    branch:
+    - staging
+    event:
+    - push
+
+trigger:
+  branch:
+  - staging
+  event:
+  - push
+
+---
+kind: pipeline
+name: "[DRONE]::[UAT]::[push]::[release/*]"
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: "[GIT_CLONE]::[UAT]::[push]::[release/*]"
+  image: alpine/git
+  commands:
+  - git clone -b $DRONE_BRANCH --single-branch --depth 1 https://github.com/muzanella11/DronePipelineDefinition.git .
+  - git checkout -b $DRONE_COMMIT
+  when:
+    branch:
+    - release/*
+    event:
+    - push
+
+- name: "[BUILD_DEPENDENCIES]::[UAT]::[push]::[release/*"
+  image: awhalen/docker-php-composer-node
+  commands:
+  - yarn install --ignore-engines --production=false
+  - yarn build
+  when:
+    branch:
+    - release/*
+    event:
+    - push
+
+trigger:
+  branch:
+  - release/*
+  event:
+  - push
+
+---
+kind: pipeline
+name: "[DRONE]::[PRD]::[tag]::[master]"
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: "[GIT_CLONE]::[PRD]::[tag]::[master]"
+  image: alpine/git
+  commands:
+  - git clone -b master --single-branch --depth 1 https://github.com/muzanella11/DronePipelineDefinition.git .
+  - git checkout -b $DRONE_COMMIT
+  when:
+    event:
+    - tag
+
+- name: "[BUILD_DEPENDENCIES]::[PRD]::[tag]::[master]"
+  image: awhalen/docker-php-composer-node
+  commands:
+  - yarn install --ignore-engines --production=false
+  - yarn build
+  when:
+    event:
+    - tag
+
+trigger:
+  event:
+  - tag
+
+...
